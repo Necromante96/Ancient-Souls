@@ -1,6 +1,3 @@
-/* Backup: AS_BattlePositions v1.0.1 - criado automaticamente */
-/* Copiado de js/plugins/AS_BattlePositions.js */
-
 /*:
  * @target MZ
  * @plugindesc [v1.0.1] Ajusta posições de atores e inimigos em batalha lateral para várias resoluções (presets + escala automática). - AncientSouls

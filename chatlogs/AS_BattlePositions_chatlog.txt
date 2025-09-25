@@ -27,3 +27,26 @@ Alterações:
 Observações:
 - Preset é suportado como parâmetro (estrutura pronta), mas mapeamentos por preset ainda precisam ajustes finos.
 - Recomendado testar no RPG Maker MZ para confirmar estética em diferentes resoluções.
+
+---
+---
+[AS_BattlePositions] - v1.0.2
+Data: 25/09/2025 13:45:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Implementa presets e posicionamento relativo com base nas dimensões reais da tela usando `Graphics.width`/`Graphics.height`.
+Alterações principais:
+- Bump versão para 1.0.2
+- Adicionado parâmetro `Preset` com opções: 1920x1080, 1366x768, 1280x720. Quando preenchido, o plugin calcula posições relativas automaticamente usando ratios derivadas da referência 1920x1080.
+- `setActorHome` atualizado para calcular posições dos atores via ratios (ex.: x = Graphics.width * baseXRatio + index * Graphics.width * spacingXRatio).
+- `setBattler` atualizado para aplicar offsets de inimigos relativos à tela atual quando `Preset` ativo.
+- Mantida compatibilidade: se `Preset` estiver vazio, o plugin usa os parâmetros manuais e um fator de escala baseado em 1920x1080.
+
+Observações:
+- Esta versão aplica posicionamento proporcional em runtime, mas NÃO inclui integração automática com as Opções do jogo nem persistência em `ConfigManager` (essas features podem ser adicionadas em versões futuras). Se você estiver usando uma build que suporte redimensionamento dinâmico, o cálculo refletirá imediatamente as dimensões atuais; caso contrário teste com a resolução do jogo em que será jogado.
+
+Recomendações de testes:
+- Ative o plugin e escolha um `Preset` no parâmetro do plugin (no RPG Maker). Em seguida execute o jogo na resolução alvo e verifique as posições em batalhas laterais.
+- Para afinar visualmente: ajuste `ActorBaseX`, `ActorBaseY`, `ActorSpacingX` e `ActorSpacingY` caso o posicionamento fique fora do desejado.
+
+---

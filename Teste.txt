@@ -30,11 +30,7 @@ https://github.com/Necromante96/Ancient-Souls
 
 
 10 ideias de melhorias
-Presets de resolução + escala automática
-O que faz: fornece presets (1920x1080, 1366x768, 1280x720...) e/ou calcula posições relativas usando Graphics.width/height para ajustar atores/inimigos automaticamente.
-Por que é útil: evita ajustes manuais para cada resolução.
-Esforço: Médio.
-Versão sugerida: 1.0.1
+
 Editor in-game (live) de posições com preview e salvar presets
 O que faz: abre uma UI na cena de batalha onde você move sprites com o mouse/setas, salva presets por nome e aplica em tempo real.
 Por que é útil: ajusta visualmente sem reiniciar o jogo; ideal para balanceamento rápido.
