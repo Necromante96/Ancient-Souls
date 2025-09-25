@@ -1,7 +1,7 @@
 /*:
  * @target MZ
  * @plugindesc (v1.0.0) Ajusta posições de atores e inimigos em batalha lateral para resolução 1920x1080. - AncientSouls
- * @author Necromante96Official & Github Copilot
+ * @author Necromante96Official & GitHub Copilot
  *
  * @param ActorBaseX
  * @text Actor Base X

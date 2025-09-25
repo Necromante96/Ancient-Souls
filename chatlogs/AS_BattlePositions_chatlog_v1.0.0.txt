@@ -1,6 +1,6 @@
 [AS_BattlePositions] - v1.0.0
-Data: 25/09/2025  (Horário local desconhecido)
-Autor: Necromante96Official & Github Copilot
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
 Descrição: Criação do plugin inicial para ajustar posições de atores e inimigos na batalha lateral para resolução 1920x1080.
 Alterações:
 - Criação do arquivo `AS_BattlePositions.js` com parâmetros:
