@@ -31,48 +31,11 @@ https://github.com/Necromante96/Ancient-Souls
 
 10 ideias de melhorias
 
-Editor in-game (live) de posições com preview e salvar presets
-O que faz: abre uma UI na cena de batalha onde você move sprites com o mouse/setas, salva presets por nome e aplica em tempo real.
-Por que é útil: ajusta visualmente sem reiniciar o jogo; ideal para balanceamento rápido.
-Esforço: Alto.
-Versão sugerida: 1.1.0
-Offsets por personagem / por inimigo (profile-based)
-O que faz: permite definir offsets individuais por actorId/enemyId ou por índice; aplica automaticamente ao spawn.
-Por que é útil: personagens/inimigos diferentes frequentemente precisam de ajustes finos.
-Esforço: Baixo–Médio.
-Versão sugerida: 1.0.2
-Export / Import de presets (JSON) e compartilhamento
-O que faz: exporta presets para arquivo .json e importa de volta (útil para backups e compartilhar entre projetos).
-Por que é útil: facilita replicar layout entre máquinas/projetos.
-Esforço: Baixo.
-Versão sugerida: 1.0.3
 Snap-to-grid, alinhamento e espaçamento automático
 O que faz: ferramentas de alinhamento (esquerda/centro/direita), espaçamento uniforme, snap em grid configurável.
-Por que é útil: acelera organização dos atores sem sobreposição.
-Esforço: Médio.
-Versão sugerida: 1.1.0
+
 Sistema de evasão de sobreposição (collision avoidance) para sprites
 O que faz: ao calcular posições dos inimigos/atores, detecta sobreposição e ajusta Y/X automaticamente para manter visibilidade.
-Por que é útil: evita que sprites se sobreponham em batalhas com muitos inimigos.
-Esforço: Médio–Alto.
-Versão sugerida: 1.1.0
-Animações suaves de entrada/posição com easing e timing configurável
-O que faz: controladores de ease (linear, cubic, back) para entradas/retreat/stepForward, com duração parametrizável.
-Por que é útil: deixa a batalha mais fluida e personalizável.
-Esforço: Baixo–Médio.
-Versão sugerida: 1.0.4
-Modo de compatibilidade / hook seguro com outros plugins de batalha
-O que faz: detecta e respeita outros plugins que sobrescrevem setActorHome/setBattler (chamar o método original ou aplicar offsets relativos).
-Por que é útil: reduz conflitos e facilita integração com plugins da comunidade.
-Esforço: Baixo–Médio.
-Versão sugerida: 1.0.5
-Overlay de debug + gravação automática no chatlog das alterações
-O que faz: sobreposição com coordenadas (x,y), índices dos battlers, e botão para “log current layout” que cria uma entrada no chatlogs com snapshot.
-Por que é útil: documentação automática e diagnóstico rápido.
-Esforço: Baixo.
-Versão sugerida: 1.0.6
+
 Presets por contexto (battle type / enemy troop)
 O que faz: permite aplicar presets diferentes dependendo do troopId ou tipo de batalha (chefes vs mobs).
-Por que é útil: cenários distintos pedem layouts diferentes (bosses grandes, multi-wave, etc.).
-Esforço: Médio.
-Versão sugerida: 1.1.0

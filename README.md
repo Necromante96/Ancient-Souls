@@ -5,22 +5,23 @@ Este diretório contém plugins personalizados usados pelo projeto AncientSouls.
 ## AS_BattlePositions
 
 - Arquivo: `js/plugins/AS_BattlePositions.js`
-- Versão atual: 1.0.2
+- Versão atual: 1.0.5
 - Autor(es): Necromante96Official & GitHub Copilot
-- Objetivo: ajustar a posição dos sprites de atores e inimigos em batalhas laterais (side-view) e fornecer presets
-	que calculam posições relativas usando `Graphics.width`/`Graphics.height` (modo automático) ou permitir controle
-	manual via parâmetros do plugin.
+- Objetivo: ajustar a posição dos sprites de atores e inimigos em batalhas laterais (side-view) com sistema de layouts
+	automáticos (diagonal, horizontal, vertical, escada, escadaInvertida, grid) e presets de resolução que calculam 
+	posições usando `Graphics.width`/`Graphics.height` para escala automática.
 
 ### Como instalar / usar
 
 1. Coloque o plugin `AS_BattlePositions.js` em `js/plugins/`.
 2. Ative o plugin no Gerenciador de Plugins do RPG Maker MZ.
-3. Configurações importantes:
-	 - `Preset`: escolha uma resolução pré-definida (1920x1080, 1366x768 ou 1280x720) para cálculo automático.
-	 - Se `Preset` estiver vazio, o plugin usará os parâmetros manuais (`ActorBaseX`, `ActorBaseY`, `ActorSpacingX`, etc.).
-	 - Nota: nesta versão, o plugin calcula posições em runtime baseado em `Graphics.width/height` quando `Preset` está definido.
-		 Não há integração automática com o menu de Opções nem persistência em `ConfigManager` nesta versão; essas features
-		 podem ser adicionadas em versões futuras.
+3. Configurações importantes (v1.0.5 - Simplificada):
+	 - `Preset`: escolha uma resolução pré-definida (1920x1080, 1366x768 ou 1280x720) para escala automática.
+	 - `ActorLayout`: formação dos atores (diagonal, horizontal, vertical, escada, escadaInvertida, grid).
+	 - `EnemyLayout`: formação dos inimigos (diagonal, horizontal, vertical, escada, escadaInvertida, grid, troop).
+	 - `EnableDebugOverlay`: ativa overlay visual para depuração (cruzes vermelhas=atores, verdes=inimigos).
+	 - `ActorGridCols`/`EnemyGridCols`: número de colunas quando layout = grid.
+	 - Nota: versão simplificada usa ratios fixos otimizados, sem necessidade de ajustes manuais complexos.
 
 ### Histórico de versões
 
@@ -43,4 +44,37 @@ Este diretório contém plugins personalizados usados pelo projeto AncientSouls.
 	- `setActorHome` e `setBattler` atualizados para calcular posições relativas usando `Graphics.width`/`Graphics.height` quando `Preset` ativo.
 	- Compatibilidade: quando `Preset` vazio, comportamento igual às versões anteriores (parâmetros manuais + cálculo de escala).
 	- Observação: nesta versão ainda não há integração com menu de Opções nem persistência automática.
+
+- v1.0.3 — Snap-to-grid, alinhamento e espaçamento uniforme
+	- Data: 25/09/2025
+	- Autor: Necromante96Official & GitHub Copilot
+	- Novos parâmetros:
+		- `EnableSnap` (boolean): ativa snap-to-grid ao posicionar sprites.
+		- `GridSizeX`, `GridSizeY` (number): define o tamanho do grid para snap.
+		- `AlignMode` (select: center/left/right): alinhamento horizontal para posicionamento.
+		- `UniformSpacing` (boolean): distribui uniformemente os atores na largura disponível.
+	- Implementadas funções auxiliares: `snapToGrid`, `computeUniformSpacing`, `applyAlignmentAndSnap`.
+
+- v1.0.4 — Sistema de layouts de formação
+	- Data: 25/09/2025
+	- Autor: Necromante96Official & GitHub Copilot
+	- Novos parâmetros: `ActorLayout`, `EnemyLayout`, `ActorGridCols`, `EnemyGridCols`.
+	- Implementados layouts: diagonal, horizontal, vertical, escada, escadaInvertida, grid.
+	- Layout 'troop' (inimigos): mantém posições originais do editor de tropas.
+	- Adicionadas funções: `normalizeLayout()`, `computeActorPositions()`, `computeEnemyPositions()`.
+	- Integração com `Scene_Battle` para aplicar layouts automaticamente.
+
+- v1.0.5 — Versão simplificada (atual)
+	- Data: 25/09/2025
+	- Autor: Necromante96Official & GitHub Copilot
+	- **REMOVIDOS** parâmetros complexos: ActorBaseX/Y, ActorSpacingX/Y, EnemyOffsetX/Y, EnableSnap, GridSizeX/Y, AlignMode, UniformSpacing.
+	- **MANTIDOS** apenas essenciais: Preset, EnableDebugOverlay, ActorLayout, EnemyLayout, ActorGridCols, EnemyGridCols.
+	- Posicionamento baseado em ratios fixos otimizados para diferentes resoluções.
+	- Adicionado debug overlay visual (cruzes vermelhas=atores, verdes=inimigos).
+	- Plugin plug-and-play: escolha preset e layout, sem ajustes manuais necessários.
+
+### Chatlog completo
+
+Consulte: `js/plugins/chatlogs/AS_BattlePositions_chatlog.txt`
+
 

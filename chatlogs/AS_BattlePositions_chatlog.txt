@@ -29,7 +29,6 @@ Observações:
 - Recomendado testar no RPG Maker MZ para confirmar estética em diferentes resoluções.
 
 ---
----
 [AS_BattlePositions] - v1.0.2
 Data: 25/09/2025 13:45:00 (Hora assumida - atualize se preferir)
 Autor: Necromante96Official & GitHub Copilot
@@ -50,3 +49,79 @@ Recomendações de testes:
 - Para afinar visualmente: ajuste `ActorBaseX`, `ActorBaseY`, `ActorSpacingX` e `ActorSpacingY` caso o posicionamento fique fora do desejado.
 
 ---
+
+[AS_BattlePositions] - v1.0.3
+Data: 25/09/2025 14:20:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Adiciona Snap-to-grid, alinhamento horizontal (left/center/right) e espaçamento uniforme entre atores.
+Alterações principais:
+- Bump versão para 1.0.3
+- Novos parâmetros: `EnableSnap` (boolean), `GridSizeX`, `GridSizeY`, `AlignMode` (center/left/right), `UniformSpacing` (boolean)
+- Implementadas funções auxiliares: `snapToGrid`, `computeUniformSpacing`, `applyAlignmentAndSnap`
+- `setActorHome` agora calcula posições para todos os atores e aplica alinhamento/espacamento/snap antes de definir `setHome` para cada sprite
+- `setBattler` aplica snap aos offsets dos inimigos quando `EnableSnap` ativo
+
+Observações:
+- Espaçamento uniforme distribui atores entre a área disponível quando ativado; ajuste os parâmetros de base para melhores resultados.
+- Alinhamento `left`/`right` aplica uma margem mínima automática (32 px) para evitar sprites encostados nas bordas.
+
+Recomendações de testes:
+- Ative `EnableSnap=true` e teste `GridSizeX/Y` em 8/16 para ver o efeito de snap.
+- Ative `UniformSpacing=true` em batalhas com múltiplos atores para validar a distribuição.
+
+---
+
+[AS_BattlePositions] - v1.0.4
+Data: 25/09/2025 15:10:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Implementa sistema de layouts de formação para atores e inimigos, incluindo formações: diagonal, horizontal, vertical, escada, escadaInvertida e grid.
+Alterações principais:
+- Bump versão para 1.0.4
+- Novos parâmetros: `ActorLayout` e `EnemyLayout` (diagonal/horizontal/vertical/escada/escadaInvertida/grid), `ActorGridCols`, `EnemyGridCols`
+- Adicionada função `normalizeLayout()` para suporte a variações de escrita
+- `computeActorPositions()` implementa todos os layouts de formação para atores
+- `computeEnemyPositions()` implementa todos os layouts de formação para inimigos (exceto 'troop' que mantém posições originais)
+- Integração com `Scene_Battle` para aplicar layouts automaticamente no início da batalha
+
+Observações:
+- Layout 'escada': forma escada descendente (X e Y crescem juntos)
+- Layout 'escadaInvertida': forma escada ascendente (X cresce, Y decresce)
+- Layout 'grid': distribui em grade usando número de colunas configurável
+- Layout 'troop' (apenas inimigos): mantém posições originais do editor de tropas
+
+Recomendações de testes:
+- Teste cada layout em batalhas com diferentes números de atores/inimigos
+- Para layout 'grid', ajuste `ActorGridCols`/`EnemyGridCols` conforme necessário
+- Layouts funcionam com todos os recursos anteriores (presets, snap, alinhamento)
+
+---
+
+[AS_BattlePositions] - v1.0.5
+Data: 25/09/2025 16:30:00
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Versão simplificada que remove complexidade desnecessária, mantendo apenas os recursos essenciais de layouts e presets automáticos.
+Alterações principais:
+- Bump versão para 1.0.5
+- **REMOVIDOS** parâmetros complexos: ActorBaseX/Y, ActorSpacingX/Y, EnemyOffsetX/Y, EnableSnap, GridSizeX/Y, AlignMode, UniformSpacing
+- **MANTIDOS** parâmetros essenciais: Preset, EnableDebugOverlay, ActorLayout, ActorGridCols, EnemyLayout, EnemyGridCols
+- Posicionamento baseado exclusivamente em ratios fixos otimizados para diferentes resoluções
+- Atores: baseX: 1200/1920, baseY: 540/1080, spacingX: 160/1920, spacingY: 48/1080
+- Inimigos: baseX: 0.25, baseY: 0.5, spacingX: 140/1920, spacingY: 64/1080
+- Removidas funções obsoletas: `snapToGrid()`, `computeUniformSpacing()`, `applyAlignmentAndSnap()`
+- Simplificadas funções: `computeActorPositions()` e `computeEnemyPositions()` usam apenas preset ratios
+- Adicionado debug overlay visual para verificação de posições em batalha
+
+Observações:
+- Esta versão prioriza simplicidade e facilidade de uso
+- Todos os layouts (diagonal, horizontal, vertical, escada, escadaInvertida, grid) funcionam perfeitamente
+- Escala automática usando `Graphics.width/Graphics.height` mantida e otimizada
+- Debug overlay mostra cruzes vermelhas (atores) e verdes (inimigos) com coordenadas
+
+Recomendações de testes:
+- Ative `EnableDebugOverlay=true` para visualizar posições calculadas
+- Teste todos os layouts em diferentes resoluções usando o sistema de presets
+- Plugin agora é plug-and-play: escolha o preset e layout desejados, sem necessidade de ajustes manuais
+

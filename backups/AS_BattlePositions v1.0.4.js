@@ -1,7 +1,43 @@
 /*:
  * @target MZ
- * @plugindesc [v1.0.5] Ajusta posições de atores e inimigos com layouts (diagonal, horizontal, vertical, escada, grid) e presets de resolução. - AncientSouls
+ * @plugindesc [v1.0.4] Ajusta posições de atores e inimigos (layouts: diagonal, horizontal, vertical, escada, grid) com presets, escala, snap e alinhamento. - AncientSouls
  * @author Necromante96Official & GitHub Copilot
+ *
+ * @param ActorBaseX
+ * @text Actor Base X
+ * @desc Posição X base dos atores (quando em casa) em px (padrão 600 para MV). Ajuste para 1920x1080.
+ * @type number
+ * @default 1200
+ *
+ * @param ActorBaseY
+ * @text Actor Base Y
+ * @desc Posição Y base dos atores (quando em casa) em px (padrão 280). Ajuste para 1920x1080.
+ * @type number
+ * @default 540
+ *
+ * @param ActorSpacingX
+ * @text Actor Spacing X
+ * @desc Espaçamento X entre atores.
+ * @type number
+ * @default 160
+ *
+ * @param ActorSpacingY
+ * @text Actor Spacing Y
+ * @desc Espaçamento Y entre atores.
+ * @type number
+ * @default 48
+ *
+ * @param EnemyOffsetX
+ * @text Enemy Offset X
+ * @desc Offset global X para inimigos.
+ * @type number
+ * @default 0
+ *
+ * @param EnemyOffsetY
+ * @text Enemy Offset Y
+ * @desc Offset global Y para inimigos.
+ * @type number
+ * @default 0
  *
  * @param Preset
  * @text Preset de Resolução
@@ -12,6 +48,39 @@
  * @option 1366x768
  * @option 1280x720
  * @default 
+ *
+ * @param EnableSnap
+ * @text Ativar Snap-to-grid
+ * @desc True para ativar snap-to-grid ao posicionar atores/inimigos.
+ * @type boolean
+ * @default false
+ *
+ * @param GridSizeX
+ * @text Grid Size X
+ * @desc Largura do grid em pixels (snap X).
+ * @type number
+ * @default 16
+ *
+ * @param GridSizeY
+ * @text Grid Size Y
+ * @desc Altura do grid em pixels (snap Y).
+ * @type number
+ * @default 16
+ *
+ * @param AlignMode
+ * @text Alinhamento
+ * @desc Alinhamento horizontal dos atores: left, center ou right (quando Preset ativo).
+ * @type select
+ * @option center
+ * @option left
+ * @option right
+ * @default center
+ *
+ * @param UniformSpacing
+ * @text Espaçamento uniforme
+ * @desc True para calcular espaçamento uniforme entre atores baseado na largura disponível.
+ * @type boolean
+ * @default false
  *
  * @param EnableDebugOverlay
  * @text Debug Overlay
@@ -58,7 +127,7 @@
  *
  * @help
  * AS_BattlePositions.js
-* Version 1.0.5
+* Version 1.0.4
  *
  * Este plugin permite ajustar as posições base de atores e offsets de inimigos
  * para que a batalha lateral fique correta em resoluções altas (ex: 1920x1080).
@@ -70,7 +139,18 @@
 (() => {
     const pluginName = "AS_BattlePositions";
     const params = PluginManager.parameters(pluginName) || {};
-    
+    // Valores base (projetados para ReferenceWidth x ReferenceHeight)
+    let ActorBaseX = Number(params.ActorBaseX || 1200);
+    let ActorBaseY = Number(params.ActorBaseY || 540);
+    let ActorSpacingX = Number(params.ActorSpacingX || 160);
+    let ActorSpacingY = Number(params.ActorSpacingY || 48);
+    let EnemyOffsetX = Number(params.EnemyOffsetX || 0);
+    let EnemyOffsetY = Number(params.EnemyOffsetY || 0);
+    const EnableSnap = params.EnableSnap === 'true';
+    const GridSizeX = Number(params.GridSizeX || 16);
+    const GridSizeY = Number(params.GridSizeY || 16);
+    const AlignMode = String(params.AlignMode || 'center');
+    const UniformSpacing = params.UniformSpacing === 'true';
     const EnableDebugOverlay = params.EnableDebugOverlay === 'true';
     let ActorLayout = String(params.ActorLayout || 'diagonal');
     const ActorGridCols = Number(params.ActorGridCols || 0);
@@ -79,7 +159,11 @@
 
     // Preset (inicialmente do parâmetro, mas sincronizado com ConfigManager se presente)
     let Preset = String(params.Preset || '').toLowerCase();
+
+    // Normaliza preset: remover espaços
     if (Preset) Preset = Preset.trim();
+
+    // Se preset estiver ativo, forçar valores de referência para evitar que os parâmetros manuais prejudiquem o comportamento
     const presetActive = !!(Preset && Preset.indexOf('x') !== -1);
     
     // Normalizar layouts para aceitar variações
@@ -92,16 +176,24 @@
     
     ActorLayout = normalizeLayout(ActorLayout);
     EnemyLayout = normalizeLayout(EnemyLayout);
+    if (presetActive) {
+        ActorBaseX = 1200;
+        ActorBaseY = 540;
+        ActorSpacingX = 160;
+        ActorSpacingY = 48;
+    }
 
     // Log de inicialização para diagnóstico rápido (visível no console do playtest)
     try {
         console.log('[AS_BattlePositions] init', {
-            version: '1.0.5',
+            version: '1.1.0',
             Preset: Preset || '(none)',
             presetActive: presetActive,
-            ActorLayout, ActorGridCols,
-            EnemyLayout, EnemyGridCols,
-            EnableDebugOverlay: !!EnableDebugOverlay
+            ActorBaseX, ActorBaseY, ActorSpacingX, ActorSpacingY,
+            EnemyOffsetX, EnemyOffsetY,
+            EnableSnap: !!EnableSnap,
+            GridSizeX, GridSizeY, AlignMode, UniformSpacing: !!UniformSpacing,
+            ActorLayout, EnemyLayout
         });
     } catch (e) { /* ignore */ }
 
@@ -115,7 +207,49 @@
         return Math.min(sx, sy);
     }
 
+    // Snap / alignment helpers
+    function snapToGrid(value, grid) {
+        if (!grid || grid <= 0) return value;
+        return Math.round(value / grid) * grid;
+    }
 
+    function computeUniformSpacing(count, leftX, rightX) {
+        if (count <= 1) return 0;
+        return Math.floor((rightX - leftX) / (count - 1));
+    }
+
+    function applyAlignmentAndSnap(positions, widthAvailable) {
+        // positions: array of {x,y}
+        const count = positions.length;
+        if (UniformSpacing && count > 1) {
+            const leftX = Math.min(...positions.map(p => p.x));
+            const rightX = Math.max(...positions.map(p => p.x));
+            const spacing = computeUniformSpacing(count, leftX, rightX);
+            for (let i = 0; i < count; i++) {
+                positions[i].x = leftX + i * spacing;
+            }
+        }
+        // Align horizontally within widthAvailable
+        if (AlignMode === 'center') {
+            // already roughly centered by base ratios; no-op here
+        } else if (AlignMode === 'left') {
+            const minX = Math.min(...positions.map(p => p.x));
+            const shift = Math.max(0, 32 - minX); // ensure some margin
+            positions.forEach(p => p.x += shift);
+        } else if (AlignMode === 'right') {
+            const maxX = Math.max(...positions.map(p => p.x));
+            const shift = Math.max(0, (widthAvailable - 32) - maxX);
+            positions.forEach(p => p.x += shift);
+        }
+        // Apply grid snap
+        if (EnableSnap) {
+            positions.forEach(p => {
+                p.x = snapToGrid(p.x, GridSizeX);
+                p.y = snapToGrid(p.y, GridSizeY);
+            });
+        }
+        return positions;
+    }
 
     // Debug overlay sprite (desenha cruzes e coordenadas)
     function Sprite_DebugOverlay() {
@@ -192,21 +326,28 @@
         }
         if (actorCount <= 0) actorCount = $gameParty ? $gameParty.battleMembers().length : 0;
         if (actorCount <= 0) actorCount = 4; // fallback
-        
         const width = Graphics.width;
         const height = Graphics.height;
-        const baseXRatio = 1200/1920;
-        const baseYRatio = 540/1080;
-        const spacingXRatio = 160/1920;
-        const spacingYRatio = 48/1080;
+        let baseXRatio = 1200/1920;
+        let baseYRatio = 540/1080;
+        let spacingXRatio = 160/1920;
+        let spacingYRatio = 48/1080;
+        const SCALE = computeScale();
         let positions = [];
+
+        const usePreset = !!Preset;
+        function presetX(i){ return Math.round(width * (baseXRatio + i * spacingXRatio)); }
+        function presetY(i){ return Math.round(height * (baseYRatio + i * spacingYRatio)); }
+        function manualX(i){ return Math.round((ActorBaseX + i * ActorSpacingX) * SCALE); }
+        function manualY(i){ return Math.round((ActorBaseY + i * ActorSpacingY) * SCALE); }
 
         const layout = ActorLayout;
         if (layout === 'grid') {
             // grade: definir cols
             let cols = ActorGridCols > 1 ? ActorGridCols : Math.ceil(Math.sqrt(actorCount));
-            const cellW = Math.floor(width * 0.25 / cols);
+            const cellW = Math.floor(width * 0.25 / cols) + (usePreset?0:0); // largura relativa p bloco atores
             const cellH = Math.floor(height * 0.25 / Math.ceil(actorCount/cols));
+            // origem aproximada (lado direito)
             const originX = Math.round(width * baseXRatio);
             const originY = Math.round(height * baseYRatio);
             for (let i=0;i<actorCount;i++) {
@@ -218,23 +359,23 @@
             }
         } else {
             for (let i = 0; i < actorCount; i++) {
-                let x = Math.round(width * (baseXRatio + i * spacingXRatio));
-                let y = Math.round(height * (baseYRatio + i * spacingYRatio));
-                
+                let x = usePreset ? presetX(i) : manualX(i);
+                let y = usePreset ? presetY(i) : manualY(i);
                 switch(layout){
                     case 'horizontal':
-                        y = Math.round(height * baseYRatio);
+                        y = usePreset ? Math.round(height * baseYRatio) : Math.round(ActorBaseY * SCALE);
                         break;
                     case 'vertical':
-                        x = Math.round(width * baseXRatio);
+                        x = usePreset ? Math.round(width * baseXRatio) : Math.round(ActorBaseX * SCALE);
                         break;
                     case 'escada':
-                        x = Math.round(width * baseXRatio) + i * Math.round(width * spacingXRatio);
-                        y = Math.round(height * baseYRatio) + i * Math.round(height * spacingYRatio);
+                        // já é diagonal; reforçar diferença
+                        y = (usePreset ? Math.round(height * baseYRatio) : Math.round(ActorBaseY * SCALE)) + i * (usePreset ? Math.round(height*spacingYRatio) : Math.round(ActorSpacingY * SCALE));
+                        x = (usePreset ? Math.round(width * baseXRatio) : Math.round(ActorBaseX * SCALE)) + i * (usePreset ? Math.round(width*spacingXRatio) : Math.round(ActorSpacingX * SCALE));
                         break;
                     case 'escadainvertida':
-                        x = Math.round(width * baseXRatio) + i * Math.round(width * spacingXRatio);
-                        y = Math.round(height * baseYRatio) - i * Math.round(height * spacingYRatio);
+                        y = (usePreset ? Math.round(height * baseYRatio) : Math.round(ActorBaseY * SCALE)) - i * (usePreset ? Math.round(height*spacingYRatio) : Math.round(ActorSpacingY * SCALE));
+                        x = (usePreset ? Math.round(width * baseXRatio) : Math.round(ActorBaseX * SCALE)) + i * (usePreset ? Math.round(width*spacingXRatio) : Math.round(ActorSpacingX * SCALE));
                         break;
                     case 'diagonal':
                     default:
@@ -244,15 +385,36 @@
                 positions.push({x,y});
             }
         }
+        // Aplicar alinhamento/snap se não for grid
+        if (layout !== 'grid') {
+            applyAlignmentAndSnap(positions, width);
+        } else if (EnableSnap) {
+            positions.forEach(p=>{p.x = snapToGrid(p.x,GridSizeX); p.y = snapToGrid(p.y,GridSizeY);});
+        }
         return positions;
     }
 
-    // Para inimigos: layout controlado ou layout original do troop
+    // Para inimigos, usamos o screenX/screenY do Game_Enemy; mas podemos aplicar offsets
     const _Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
     Sprite_Enemy.prototype.setBattler = function(battler) {
         _Sprite_Enemy_setBattler.call(this, battler);
-        
-        if (EnemyLayout !== 'troop') {
+        // Aplica offset global (após setHome ser chamada internamente)
+        const SCALE = computeScale();
+        if (EnemyLayout === 'troop') {
+            if (Preset) {
+                const enemyOffsetXRatio = EnemyOffsetX ? (EnemyOffsetX / 1920) : 0;
+                const enemyOffsetYRatio = EnemyOffsetY ? (EnemyOffsetY / 1080) : 0;
+                this._homeX += Math.round(Graphics.width * enemyOffsetXRatio);
+                this._homeY += Math.round(Graphics.height * enemyOffsetYRatio);
+            } else {
+                this._homeX += Math.round(EnemyOffsetX * SCALE);
+                this._homeY += Math.round(EnemyOffsetY * SCALE);
+            }
+            if (EnableSnap) {
+                this._homeX = snapToGrid(this._homeX, GridSizeX);
+                this._homeY = snapToGrid(this._homeY, GridSizeY);
+            }
+        } else {
             // Layout controlado
             const positions = computeEnemyPositions();
             const scene = SceneManager._scene;
@@ -348,7 +510,22 @@
                 }
             }
         }
-
+        // Offsets globais
+        positions.forEach(p => {
+            if (usePreset) {
+                const offXR = EnemyOffsetX ? EnemyOffsetX/1920 : 0;
+                const offYR = EnemyOffsetY ? EnemyOffsetY/1080 : 0;
+                p.x += Math.round(width * offXR);
+                p.y += Math.round(height * offYR);
+            } else {
+                p.x += Math.round(EnemyOffsetX * SCALE);
+                p.y += Math.round(EnemyOffsetY * SCALE);
+            }
+            if (EnableSnap) {
+                p.x = snapToGrid(p.x, GridSizeX);
+                p.y = snapToGrid(p.y, GridSizeY);
+            }
+        });
         return positions;
     }
 

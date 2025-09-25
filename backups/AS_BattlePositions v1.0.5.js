@@ -96,7 +96,7 @@
     // Log de inicialização para diagnóstico rápido (visível no console do playtest)
     try {
         console.log('[AS_BattlePositions] init', {
-            version: '1.0.5',
+            version: '1.2.0',
             Preset: Preset || '(none)',
             presetActive: presetActive,
             ActorLayout, ActorGridCols,
