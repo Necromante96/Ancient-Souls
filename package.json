@@ -1,0 +1,8 @@
+{
+  "name": "ancientsouls-plugins",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "sync-docs": "node ./tools/sync_plugin_docs.js"
+  }
+}

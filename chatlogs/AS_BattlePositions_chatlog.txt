@@ -1,0 +1,29 @@
+[AS_BattlePositions] - v1.0.0
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Criação do plugin inicial para ajustar posições de atores e inimigos na batalha lateral para resolução 1920x1080.
+Alterações:
+- Criação do arquivo `AS_BattlePositions.js` com parâmetros:
+  - ActorBaseX (1200)
+  - ActorBaseY (540)
+  - ActorSpacingX (160)
+  - ActorSpacingY (48)
+  - EnemyOffsetX (0)
+  - EnemyOffsetY (0)
+Observações:
+- Implementação mínima. Override de `Sprite_Actor.prototype.setActorHome` e `Sprite_Enemy.prototype.setBattler` para aplicar offsets.
+
+---
+[AS_BattlePositions] - v1.0.1
+Data: 25/09/2025 12:30:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Adiciona presets de resolução e escala automática baseada em Graphics.width/Graphics.height. Ajusta posições dos atores/inimigos proporcionalmente.
+Alterações:
+- Bump versão para 1.0.1
+- Adicionado cálculo de scaleFactor (ScaleMode: none/width/height/min/max)
+- Aplicado SCALE a ActorBaseX/ActorBaseY/ActorSpacing e EnemyOffset
+- Mantida compatibilidade com referências originais dos métodos
+Observações:
+- Preset é suportado como parâmetro (estrutura pronta), mas mapeamentos por preset ainda precisam ajustes finos.
+- Recomendado testar no RPG Maker MZ para confirmar estética em diferentes resoluções.
