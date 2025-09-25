@@ -39,6 +39,16 @@
  * @type number
  * @default 0
  *
+ * @param Preset
+ * @text Preset de Resolução
+ * @desc Preset de resolução (1920x1080, 1366x768, 1280x720). Se preenchido, ajusta valores base relativos.
+ * @type select
+ * @option 
+ * @option 1920x1080
+ * @option 1366x768
+ * @option 1280x720
+ * @default 
+ *
  * @help
  * AS_BattlePositions.js
  * Version 1.0.1
@@ -56,51 +66,46 @@
     const pluginName = "AS_BattlePositions";
     const params = PluginManager.parameters(pluginName) || {};
     // Valores base (projetados para ReferenceWidth x ReferenceHeight)
-    const ActorBaseX = Number(params.ActorBaseX || 1200);
-    const ActorBaseY = Number(params.ActorBaseY || 540);
-    const ActorSpacingX = Number(params.ActorSpacingX || 160);
-    const ActorSpacingY = Number(params.ActorSpacingY || 48);
-    const EnemyOffsetX = Number(params.EnemyOffsetX || 0);
-    const EnemyOffsetY = Number(params.EnemyOffsetY || 0);
+    let ActorBaseX = Number(params.ActorBaseX || 1200);
+    let ActorBaseY = Number(params.ActorBaseY || 540);
+    let ActorSpacingX = Number(params.ActorSpacingX || 160);
+    let ActorSpacingY = Number(params.ActorSpacingY || 48);
+    let EnemyOffsetX = Number(params.EnemyOffsetX || 0);
+    let EnemyOffsetY = Number(params.EnemyOffsetY || 0);
 
-    // Escalonamento / presets
-    const ReferenceWidth = Number(params.ReferenceWidth || 1920);
-    const ReferenceHeight = Number(params.ReferenceHeight || 1080);
-    const ScaleMode = String(params.ScaleMode || 'min'); // options: none, width, height, min, max
+    // Preset (se preenchido, ignora os parâmetros do gerenciador e usa valores de referência)
+    let Preset = String(params.Preset || '').toLowerCase();
 
-    function getScaleFactor() {
-        if (ScaleMode === 'none') return 1.0;
-        const sx = Graphics.width / ReferenceWidth;
-        const sy = Graphics.height / ReferenceHeight;
-        switch (ScaleMode) {
-            case 'width': return sx;
-            case 'height': return sy;
-            case 'min': return Math.min(sx, sy);
-            case 'max': return Math.max(sx, sy);
-            default: return 1.0;
-        }
-    }
-    
-    // Permite seleção explícita de preset (mapeamento simples)
-    const Preset = String(params.Preset || '').toLowerCase();
-    if (Preset) {
-        if (Preset === '1920x1080') {
-            // keep defaults
-        } else if (Preset === '1366x768') {
-            // example mapping: adjust base to look good on 1366x768
-            // these values are relative to ReferenceWidth/Height scaling below
-        } else if (Preset === '1280x720') {
-            // likewise
-        }
+    // Função para calcular SCALE a partir dos parâmetros atuais
+    // computeScale usa referência fixa 1920x1080 e modo 'min' para preservar proporção
+    function computeScale() {
+        const refW = 1920;
+        const refH = 1080;
+        const sx = Graphics.width / refW;
+        const sy = Graphics.height / refH;
+        return Math.min(sx, sy);
     }
 
-    // Calcula o fator de escala final uma vez
-    const SCALE = getScaleFactor();
+    // Nota: se Preset estiver definido, usaremos valores de referência (1200/540/160/48)
+    // escalados dinamicamente dentro das funções de posicionamento — assim o plugin
+    // ignora os parâmetros ajustáveis exibidos na imagem e usa comportamento automático.
 
     // Guardar referência original
     const _Sprite_Actor_setActorHome = Sprite_Actor.prototype.setActorHome;
     Sprite_Actor.prototype.setActorHome = function(index) {
-    // Calcula a posição baseada nos parâmetros
+        // Se Preset definido, usar valores de referência escalados automaticamente
+        if (Preset) {
+            // Use ratios relative to screen size (derived from 1920x1080 reference)
+            const baseXRatio = 1200 / 1920; // 0.625
+            const baseYRatio = 540 / 1080;  // 0.5
+            const spacingXRatio = 160 / 1920; // ~0.08333
+            const spacingYRatio = 48 / 1080;  // ~0.04444
+            const x = Math.round(Graphics.width * baseXRatio + index * Graphics.width * spacingXRatio);
+            const y = Math.round(Graphics.height * baseYRatio + index * Graphics.height * spacingYRatio);
+            this.setHome(x, y);
+            return;
+        }
+        // Caso contrário, usa os parâmetros definidos no Gerenciador de Plugins
         const x = Math.round((ActorBaseX + index * ActorSpacingX) * SCALE);
         const y = Math.round((ActorBaseY + index * ActorSpacingY) * SCALE);
         this.setHome(x, y);
@@ -110,9 +115,18 @@
     const _Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
     Sprite_Enemy.prototype.setBattler = function(battler) {
         _Sprite_Enemy_setBattler.call(this, battler);
-    // Aplica offset global (após setHome ser chamada internamente)
-        this._homeX += Math.round(EnemyOffsetX * SCALE);
-        this._homeY += Math.round(EnemyOffsetY * SCALE);
+        // Aplica offset global (após setHome ser chamada internamente)
+        const SCALE = computeScale();
+        if (Preset) {
+            // enemy offsets relative to screen ratios (defaults are zero)
+            const enemyOffsetXRatio = EnemyOffsetX ? (EnemyOffsetX / 1920) : 0;
+            const enemyOffsetYRatio = EnemyOffsetY ? (EnemyOffsetY / 1080) : 0;
+            this._homeX += Math.round(Graphics.width * enemyOffsetXRatio);
+            this._homeY += Math.round(Graphics.height * enemyOffsetYRatio);
+        } else {
+            this._homeX += Math.round(EnemyOffsetX * SCALE);
+            this._homeY += Math.round(EnemyOffsetY * SCALE);
+        }
         this.updatePosition();
     };
 })();
