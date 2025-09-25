@@ -1,0 +1,26 @@
+Estou criando um jogo no rpg maker mz, com base nos jogos: final fantasy, pokemon, digimon e todo o universo de jogos 2d.
+
+Quero que me ajude a criar um plugin para ajustar as posições dos inimigos e personagens na batalha lateral, pois estou usando a resolução 1920x1080 de tela e de UI.
+
+Vamos começar por partes e ir aperfeiçoando o plugin a cada atualização; a cada atualização crie uma versão crescente exemplo: 1.0.0 - 1.0.1 - ao chegar em 1.0.9, vai para 1.1.0 sempre nessa ordem.
+
+Crie um chatlog registrando todo o histótico de atualizações para depois a gente buscar por ele quando precisar de ajuda. A pasta onde precisa criar os chatlogs está aqui: D:\RPG Maker MZ\=Projeto=\AncientSouls\js\plugins\chatlogs
+
+Verifique todos os arquivos base padão do rpg maker mz que está nessa pasta: D:\RPG Maker MZ\=Projeto=\AncientSouls\js\plugins\base
+
+Crie um arquivo README aqui: D:\RPG Maker MZ\=Projeto=\AncientSouls\js\plugins listando sempre todas as atualizações dos plugins que a gente vai criar junto exemplo:
+(1° plugin)
+''todas as informações dele''
+''chatlog dele''
+
+(2° plugin)
+''todas as informações dele''
+''chatlog dele''
+
+(3° plugin)
+''todas as informações dele''
+''chatlog dele''
+
+Coloque também dadas de resgistros dessas atualizações.
+
+Pode começar por favor.
