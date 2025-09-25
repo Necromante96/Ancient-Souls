@@ -24,3 +24,5 @@ Crie um arquivo README aqui: D:\RPG Maker MZ\=Projeto=\AncientSouls\js\plugins l
 Coloque também dadas de resgistros dessas atualizações.
 
 Pode começar por favor.
+
+https://github.com/Necromante96/Ancient-Souls
