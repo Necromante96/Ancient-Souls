@@ -28,14 +28,3 @@ Ajuste os autores para serem Necromante96Official & GitHub Copilot.
 
 https://github.com/Necromante96/Ancient-Souls
 
-
-10 ideias de melhorias
-
-Snap-to-grid, alinhamento e espaçamento automático
-O que faz: ferramentas de alinhamento (esquerda/centro/direita), espaçamento uniforme, snap em grid configurável.
-
-Sistema de evasão de sobreposição (collision avoidance) para sprites
-O que faz: ao calcular posições dos inimigos/atores, detecta sobreposição e ajusta Y/X automaticamente para manter visibilidade.
-
-Presets por contexto (battle type / enemy troop)
-O que faz: permite aplicar presets diferentes dependendo do troopId ou tipo de batalha (chefes vs mobs).

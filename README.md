@@ -5,7 +5,7 @@ Este diretório contém plugins personalizados usados pelo projeto AncientSouls.
 ## AS_BattlePositions
 
 - Arquivo: `js/plugins/AS_BattlePositions.js`
-- Versão atual: 1.0.5
+- Versão atual: 1.0.8
 - Autor(es): Necromante96Official & GitHub Copilot
 - Objetivo: ajustar a posição dos sprites de atores e inimigos em batalhas laterais (side-view) com sistema de layouts
 	automáticos (diagonal, horizontal, vertical, escada, escadaInvertida, grid) e presets de resolução que calculam 
@@ -72,6 +72,24 @@ Este diretório contém plugins personalizados usados pelo projeto AncientSouls.
 	- Posicionamento baseado em ratios fixos otimizados para diferentes resoluções.
 	- Adicionado debug overlay visual (cruzes vermelhas=atores, verdes=inimigos).
 	- Plugin plug-and-play: escolha preset e layout, sem ajustes manuais necessários.
+
+	 - v1.0.6 — Refinamentos em alinhamento e espaçamento
+		- Data (assumida): 25/09/2025
+		- Autor: Necromante96Official & GitHub Copilot
+		- Adicionados parâmetros de alinhamento para inimigos (`EnemyAlignmentVertical`, `EnemyAlignmentHorizontal`) e `EnemySpacingMultiplier`.
+		- Implementada função de alinhamento baseada nas bounds dos atores e debug overlay para visualização.
+
+	 - v1.0.7 — Sistema de Boss e melhorias de formação
+		- Data (assumida): 25/09/2025
+		- Autor: Necromante96Official & GitHub Copilot
+		- Adicionado suporte a `BossEnemyId` e `BossDistance` com reorganização automática da formação (boss fica atrás dos protetores).
+		- Melhorias nos logs e reposicionamento dinâmico em runtime.
+
+	 - v1.0.8 — Offsets globais e polimentos finais
+		- Data (assumida): 25/09/2025
+		- Autor: Necromante96Official & GitHub Copilot
+		- Adicionados `ActorVerticalOffset` e `ActorHorizontalOffset` para ajustes globais de atores.
+		- Melhoria na captura/reutilização de posições `troop`, refinamento das regras de grid e ajustes finos no alinhamento.
 
 ### Chatlog completo
 

@@ -125,3 +125,78 @@ Recomendações de testes:
 - Teste todos os layouts em diferentes resoluções usando o sistema de presets
 - Plugin agora é plug-and-play: escolha o preset e layout desejados, sem necessidade de ajustes manuais
 
+---
+
+[AS_BattlePositions] - v1.0.6
+Data: 25/09/2025 17:20:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Refinamentos em layout e novos parâmetros para alinhamento de inimigos e espaçamento.
+Alterações principais:
+- Bump versão para 1.0.6
+- Adicionados parâmetros de alinhamento e espaçamento para inimigos:
+  - `EnemyAlignmentVertical` (top/center/bottom/custom)
+  - `EnemyAlignmentHorizontal` (left/center/right/mirror/custom)
+  - `EnemyVerticalOffset`, `EnemyHorizontalOffset`
+  - `EnemySpacingMultiplier`
+- Implementada função `calculateEnemyAlignment()` para ajustar posições de inimigos com base nas bounds dos atores
+- Adicionado `Sprite_DebugOverlay` para desenho de cruzes e coordenadas durante o playtest
+- `computeActorPositions()` e `computeEnemyPositions()` atualizadas para usar ratios e layout existentes
+
+Observações:
+- Alinhamento `mirror` espelha o grupo inimigo em relação ao centro da tela
+- O multiplicador de espaçamento facilita ajustes rápidos sem alterar ratios base
+
+Recomendações de testes:
+- Teste `EnemyAlignment*` em conjunto com vários layouts para validar posicionamento
+- Ative `EnableDebugOverlay` para conferir coordenadas e comportamentos
+
+---
+
+[AS_BattlePositions] - v1.0.7
+Data: 25/09/2025 18:05:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Introduz sistema de boss e expansão de parâmetros (Boss, distância, logs) e melhorias no alinhamento.
+Alterações principais:
+- Bump versão para 1.0.7
+- Adicionado sistema de formação de boss:
+  - `BossEnemyId` (selecionável no banco de dados)
+  - `BossDistance` (multiplicador de afastamento do boss)
+  - Função `arrangeBossFormation()` que posiciona o boss atrás dos protetores
+- Melhorias na `calculateEnemyAlignment()` e logs de debug no console
+- `Scene_Battle` agora aplica atualizações periódicas (frameCount % 30) para reposicionar inimigos dinamicamente
+
+Observações:
+- Quando configurado, o boss é detectado automaticamente e o grupo é reorganizado mantendo a estética do layout
+- Logs adicionais ajudam a depurar grids e alinhamentos
+
+Recomendações de testes:
+- Configure um inimigo como boss e teste `BossDistance` para ajustar a profundidade
+- Verifique combates com `EnemyLayout = grid` e com/sem boss para checar distribuição
+
+---
+
+[AS_BattlePositions] - v1.0.8
+Data: 25/09/2025 19:00:00 (Hora assumida - atualize se preferir)
+Autor: Necromante96Official & GitHub Copilot
+Caminho do plugin: `js/plugins/AS_BattlePositions.js`
+Descrição: Polimento final — adiciona offsets globais para atores, melhor captura de posições troop, regras de grid refinadas e ajustes no alinhamento.
+Alterações principais:
+- Bump versão para 1.0.8
+- Adicionados parâmetros para offsets globais dos atores:
+  - `ActorVerticalOffset`, `ActorHorizontalOffset`
+- `computeActorPositions()` aplica offsets globais para ajuste fino da linha base dos atores
+- `computeEnemyPositions()` melhorou captura e reutilização de posições originais do layout `troop` para preservar formações do banco de dados
+- Regras refinadas para `ActorGridCols` / `EnemyGridCols` (0 = automático; 1 mantém 1 coluna até 3 unidades, depois auto)
+- Ajustes na lógica de `calculateEnemyAlignment()` para margens (top/bottom/left/right) e aplicação de offsets mesmo quando `layout = troop`
+- Pequenos logs de debug adicionais quando `EnableDebugOverlay` ativo
+
+Observações:
+- Offsets globais permitem correções visuais sem alterar layouts; úteis para sprites com pivôs não padronizados
+- Captura de `troop` evita alterações irreversíveis nas posições originais do banco de dados
+
+Recomendações de testes:
+- Experimente `ActorVerticalOffset` com sprites de tamanhos variados para validar reposicionamento
+- Teste batalhas com `layout = troop` e `EnemyAlignment*` para confirmar que o deslocamento é aplicado corretamente
+

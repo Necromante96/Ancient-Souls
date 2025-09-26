@@ -1,6 +1,6 @@
 /*:
  * @target MZ
- * @plugindesc [v1.0.8] Ajusta posições de atores e inimigos com layouts (diagonal, horizontal, vertical, escada, grid) e presets de resolução. - AncientSouls
+ * @plugindesc [v1.0.7] Ajusta posições de atores e inimigos com layouts (diagonal, horizontal, vertical, escada, grid) e presets de resolução. - AncientSouls
  * @author Necromante96Official & GitHub Copilot
  *
  * @param Preset
@@ -31,25 +31,9 @@
  * @option grid
  * @default diagonal
 
- * @param ActorVerticalOffset
- * @text Offset Vertical Atores
- * @desc Offset vertical adicional aplicado a TODOS os atores (positivo = para baixo, negativo = para cima)
- * @type number
- * @min -500
- * @max 500
- * @default 0
-
- * @param ActorHorizontalOffset
- * @text Offset Horizontal Atores
- * @desc Offset horizontal adicional aplicado a TODOS os atores (positivo = direita, negativo = esquerda)
- * @type number
- * @min -500
- * @max 500
- * @default 0
-
  * @param ActorGridCols
  * @text Grid Colunas Atores
-* @desc Número de colunas quando layout = grid (0 = automático; >=1 força colunas exatas)
+ * @desc Número de colunas quando layout = grid (0 ou 1 = auto)
  * @type number
  * @default 0
 
@@ -68,7 +52,7 @@
 
  * @param EnemyGridCols
  * @text Grid Colunas Inimigos
-* @desc Número de colunas quando EnemyLayout = grid (0 = automático; >=1 força colunas; ignorado se houver boss)
+ * @desc Número de colunas quando EnemyLayout = grid (0 ou 1 = auto)
  * @type number
  * @default 0
 
@@ -135,11 +119,12 @@
  *
  * @help
  * AS_BattlePositions.js
- * Version 1.0.8
+ * Version 1.0.7
  *
  * Este plugin permite ajustar as posições base de atores e offsets de inimigos
  * para que a batalha lateral fique correta em resoluções altas (ex: 1920x1080).
  *
+ * ===== NOVOS RECURSOS v1.0.7 =====
  * SISTEMA DE ALINHAMENTO CUSTOMIZÁVEL PARA INIMIGOS:
  * 
  * Alinhamento Vertical:
@@ -176,25 +161,9 @@
  * 3. O plugin detecta automaticamente e reorganiza as posições
  * 4. Boss sempre fica protegido atrás dos inimigos menores
  *
- * OFFSETS PERSONALIZADOS PARA ATORES:
- * Agora é possível adicionar um deslocamento horizontal e vertical global
- * para todos os atores através dos parâmetros:
- * - Offset Vertical Atores
- * - Offset Horizontal Atores
- * Use isso para ajustar fino a linha base dos atores sem alterar layouts.
- *
  * Uso: Instale este plugin na lista de plugins.
  * Ajuste os parâmetros conforme necessário.
  * Este update adiciona presets de resolução e escala automática baseada em Graphics.width/Graphics.height.
- * Nota: O alinhamento horizontal/vertical configurado para inimigos agora
- * também é aplicado quando o layout = troop, preservando a formação base
- * do banco de dados e apenas deslocando o grupo.
- *
- * Grid Colunas (Atores / Inimigos):
- * - 0 = automático (usa aproximadamente sqrt(n))
- * - >=1 = força exatamente esse número de colunas
- * - Inimigos: se houver boss presente, sempre usa modo automático para distribuir melhor a guarda.
- * - Caso especial: valor = 1 mantém 1 coluna apenas até 3 unidades; com 4 ou mais alterna para modo automático (sqrt) para evitar coluna muito longa.
  */
 (() => {
     const pluginName = "AS_BattlePositions";
@@ -203,8 +172,6 @@
     const EnableDebugOverlay = params.EnableDebugOverlay === 'true';
     let ActorLayout = String(params.ActorLayout || 'diagonal');
     const ActorGridCols = Number(params.ActorGridCols || 0);
-    const ActorVerticalOffset = Number(params.ActorVerticalOffset || 0);
-    const ActorHorizontalOffset = Number(params.ActorHorizontalOffset || 0);
     let EnemyLayout = String(params.EnemyLayout || 'troop');
     const EnemyGridCols = Number(params.EnemyGridCols || 0);
     
@@ -242,7 +209,6 @@
             Preset: Preset || '(none)',
             presetActive: presetActive,
             ActorLayout, ActorGridCols,
-            ActorVerticalOffset, ActorHorizontalOffset,
             EnemyLayout, EnemyGridCols,
             EnemyAlignmentVertical, EnemyAlignmentHorizontal,
             EnemyVerticalOffset, EnemyHorizontalOffset,
@@ -251,9 +217,6 @@
             EnableDebugOverlay: !!EnableDebugOverlay
         });
     } catch (e) { /* ignore */ }
-
-    // Armazena posições originais do layout troop para aplicar alinhamento sem perder a formação do banco de dados
-    let _AS_BP_originalTroopPositions = null;
 
     // Função para calcular SCALE a partir dos parâmetros atuais
     // computeScale usa referência fixa 1920x1080 e modo 'min' para preservar proporção
@@ -267,76 +230,76 @@
 
     // Função para calcular alinhamento de inimigos baseado nas posições dos atores
     function calculateEnemyAlignment(actorPositions, enemyPositions) {
-        if (!enemyPositions || enemyPositions.length === 0) return enemyPositions;
-        const aligned = enemyPositions.map(p => ({...p}));
+        if (!actorPositions || actorPositions.length === 0 || !enemyPositions || enemyPositions.length === 0) {
+            return enemyPositions;
+        }
 
-        // Bounds inimigos atuais
-        const enemyMinX = Math.min(...aligned.map(p=>p.x));
-        const enemyMaxX = Math.max(...aligned.map(p=>p.x));
-        const enemyMinY = Math.min(...aligned.map(p=>p.y));
-        const enemyMaxY = Math.max(...aligned.map(p=>p.y));
-        const enemyCenterX = (enemyMinX + enemyMaxX)/2;
-        const enemyCenterY = (enemyMinY + enemyMaxY)/2;
-
-        const screenCenterX = Graphics.width / 2;
-        const screenCenterY = Graphics.height / 2;
-
-        // Horizontal
+        const alignedPositions = [...enemyPositions];
+        
+        // Calcular bounds dos atores
+        const actorMinX = Math.min(...actorPositions.map(p => p.x));
+        const actorMaxX = Math.max(...actorPositions.map(p => p.x));
+        const actorMinY = Math.min(...actorPositions.map(p => p.y));
+        const actorMaxY = Math.max(...actorPositions.map(p => p.y));
+        const actorCenterX = (actorMinX + actorMaxX) / 2;
+        const actorCenterY = (actorMinY + actorMaxY) / 2;
+        
+        // Calcular bounds dos inimigos
+        const enemyMinX = Math.min(...enemyPositions.map(p => p.x));
+        const enemyMaxX = Math.max(...enemyPositions.map(p => p.x));
+        const enemyMinY = Math.min(...enemyPositions.map(p => p.y));
+        const enemyMaxY = Math.max(...enemyPositions.map(p => p.y));
+        const enemyCenterX = (enemyMinX + enemyMaxX) / 2;
+        const enemyCenterY = (enemyMinY + enemyMaxY) / 2;
+        
+        // Calcular offsets baseado no alinhamento horizontal
         let horizontalOffset = 0;
         switch (EnemyAlignmentHorizontal) {
             case 'left':
-                horizontalOffset = (Graphics.width * 0.05) - enemyMinX; // 5% margem
+                horizontalOffset = actorMinX - enemyMinX;
                 break;
             case 'center':
-                horizontalOffset = screenCenterX - enemyCenterX;
+                horizontalOffset = actorCenterX - enemyCenterX;
                 break;
             case 'right':
-                horizontalOffset = (Graphics.width * 0.95) - enemyMaxX; // 95% margem direita
+                horizontalOffset = actorMaxX - enemyMaxX;
                 break;
-            case 'mirror': {
-                // Espelha em relação ao centro usando bounds dos atores se disponíveis
-                if (actorPositions && actorPositions.length) {
-                    const actorMinX = Math.min(...actorPositions.map(p => p.x));
-                    const actorMaxX = Math.max(...actorPositions.map(p => p.x));
-                    const actorCenterX = (actorMinX + actorMaxX)/2;
-                    const actorDistanceFromCenter = actorCenterX - screenCenterX;
-                    const targetEnemyCenterX = screenCenterX - actorDistanceFromCenter;
-                    horizontalOffset = targetEnemyCenterX - enemyCenterX;
-                } else {
-                    horizontalOffset = 0; // fallback nenhum ajuste
-                }
+            case 'mirror':
+                // Posiciona inimigos espelhados em relação ao centro da tela
+                const screenCenterX = Graphics.width / 2;
+                const actorDistanceFromCenter = actorCenterX - screenCenterX;
+                const targetEnemyCenterX = screenCenterX - actorDistanceFromCenter;
+                horizontalOffset = targetEnemyCenterX - enemyCenterX;
                 break;
-            }
             case 'custom':
-                horizontalOffset = 0; // base neutra
+                horizontalOffset = EnemyHorizontalOffset;
                 break;
         }
-        horizontalOffset += EnemyHorizontalOffset;
-
-        // Vertical
+        
+        // Calcular offsets baseado no alinhamento vertical
         let verticalOffset = 0;
         switch (EnemyAlignmentVertical) {
             case 'top':
-                verticalOffset = (Graphics.height * 0.15) - enemyMinY; // 15% topo
+                verticalOffset = actorMinY - enemyMinY;
                 break;
             case 'center':
-                verticalOffset = screenCenterY - enemyCenterY;
+                verticalOffset = actorCenterY - enemyCenterY;
                 break;
             case 'bottom':
-                verticalOffset = (Graphics.height * 0.85) - enemyMaxY; // 85% base
+                verticalOffset = actorMaxY - enemyMaxY;
                 break;
             case 'custom':
-                verticalOffset = 0; // neutro
+                verticalOffset = EnemyVerticalOffset;
                 break;
         }
-        verticalOffset += EnemyVerticalOffset;
-
-        aligned.forEach(p => { p.x = Math.round(p.x + horizontalOffset); p.y = Math.round(p.y + verticalOffset); });
-
-        if (EnableDebugOverlay) {
-            try { console.log('[AS_BattlePositions] AlinhamentoTela', {EnemyAlignmentHorizontal,EnemyAlignmentVertical,horizontalOffset,verticalOffset}); } catch(e){}
-        }
-        return aligned;
+        
+        // Aplicar offsets a todas as posições dos inimigos
+        alignedPositions.forEach(pos => {
+            pos.x = Math.round(pos.x + horizontalOffset);
+            pos.y = Math.round(pos.y + verticalOffset);
+        });
+        
+        return alignedPositions;
     }
 
     // Debug overlay sprite (desenha cruzes e coordenadas)
@@ -425,16 +388,8 @@
 
         const layout = ActorLayout;
         if (layout === 'grid') {
-            // grid: 0 = auto (sqrt). Colunas =1: até 3 atores mantém 1 coluna; 4+ vira auto.
-            let cols;
-            if (ActorGridCols === 0) {
-                cols = Math.ceil(Math.sqrt(actorCount));
-            } else if (ActorGridCols === 1) {
-                cols = (actorCount <= 3) ? 1 : Math.ceil(Math.sqrt(actorCount));
-            } else {
-                cols = ActorGridCols; // >=2 fixa
-            }
-            if (cols < 1) cols = 1;
+            // grade: definir cols
+            let cols = ActorGridCols > 1 ? ActorGridCols : Math.ceil(Math.sqrt(actorCount));
             const cellW = Math.floor(width * 0.25 / cols);
             const cellH = Math.floor(height * 0.25 / Math.ceil(actorCount/cols));
             const originX = Math.round(width * baseXRatio);
@@ -475,11 +430,6 @@
             }
         }
 
-        // Aplicar offsets globais de atores
-        if (ActorHorizontalOffset !== 0 || ActorVerticalOffset !== 0) {
-            positions.forEach(p => { p.x = Math.round(p.x + ActorHorizontalOffset); p.y = Math.round(p.y + ActorVerticalOffset); });
-        }
-
         return positions;
     }
 
@@ -487,15 +437,18 @@
     const _Sprite_Enemy_setBattler = Sprite_Enemy.prototype.setBattler;
     Sprite_Enemy.prototype.setBattler = function(battler) {
         _Sprite_Enemy_setBattler.call(this, battler);
-        // Sempre recalcula posições (inclui alinhamento e formação de boss).
-        const positions = computeEnemyPositions();
-        const scene = SceneManager._scene;
-        if (scene && scene._spriteset && scene._spriteset._enemySprites) {
-            const list = scene._spriteset._enemySprites;
-            const idx = list.indexOf(this);
-            if (idx >= 0 && positions[idx]) {
-                this._homeX = positions[idx].x;
-                this._homeY = positions[idx].y;
+        
+        if (EnemyLayout !== 'troop') {
+            // Layout controlado
+            const positions = computeEnemyPositions();
+            const scene = SceneManager._scene;
+            if (scene && scene._spriteset && scene._spriteset._enemySprites) {
+                const list = scene._spriteset._enemySprites;
+                const idx = list.indexOf(this);
+                if (idx >= 0 && positions[idx]) {
+                    this._homeX = positions[idx].x;
+                    this._homeY = positions[idx].y;
+                }
             }
         }
         this.updatePosition();
@@ -631,76 +584,54 @@
 
         const layout = EnemyLayout;
 
-        // Se layout troop, capturar e reutilizar posições originais definidas pelo banco de dados
-        if (layout === 'troop') {
-            // recapturar se ainda não capturado ou se tamanho mudou (sprites podem carregar depois)
-            if (!_AS_BP_originalTroopPositions || _AS_BP_originalTroopPositions.length !== count || _AS_BP_originalTroopPositions.some(p => p.x == null)) {
-                _AS_BP_originalTroopPositions = sprites.map(sp => ({ x: sp._homeX, y: sp._homeY }));
-                if (EnableDebugOverlay) {
-                    try { console.log('[AS_BattlePositions] Capturando posições originais troop', _AS_BP_originalTroopPositions); } catch(e){}
-                }
+        if (layout === 'grid') {
+            let cols = EnemyGridCols > 1 ? EnemyGridCols : Math.ceil(Math.sqrt(count));
+            let rows = Math.ceil(count / cols);
+            const blockWidth = Math.min(width * 0.40, 600) * EnemySpacingMultiplier; // aplicar multiplicador
+            const blockHeight = Math.min(height * 0.40, 400) * EnemySpacingMultiplier; // aplicar multiplicador
+            const cellW = Math.floor(blockWidth / Math.max(1, cols));
+            const cellH = Math.floor(blockHeight / Math.max(1, rows));
+            const originX = Math.round(width * baseXRatio) - Math.floor(blockWidth * 0.3);
+            const originY = Math.round(height * baseYRatio) - Math.floor(blockHeight * 0.5);
+            for (let i=0;i<count;i++) {
+                const r = Math.floor(i/cols);
+                const c = i % cols;
+                const x = originX + c * cellW + Math.floor(cellW*0.5);
+                const y = originY + r * cellH + Math.floor(cellH*0.5);
+                positions.push({x,y});
             }
-            positions = _AS_BP_originalTroopPositions.map(p => ({ x: p.x, y: p.y }));
         } else {
-            // Layouts controlados
-            if (layout === 'grid') {
-                const bossPresent = BossEnemyId > 0 && sprites.some(sp => sp._battler && sp._battler.enemyId() === BossEnemyId);
-                let cols;
-                if (bossPresent) {
-                    cols = Math.ceil(Math.sqrt(count));
-                } else if (EnemyGridCols === 0) {
-                    cols = Math.ceil(Math.sqrt(count));
-                } else if (EnemyGridCols === 1) {
-                    cols = (count <= 3) ? 1 : Math.ceil(Math.sqrt(count));
-                } else {
-                    cols = EnemyGridCols; // >=2 fixa
-                }
-                if (cols < 1) cols = 1;
-                let rows = Math.ceil(count / cols);
-                const blockWidth = Math.min(width * 0.40, 600) * EnemySpacingMultiplier; // aplicar multiplicador
-                const blockHeight = Math.min(height * 0.40, 400) * EnemySpacingMultiplier; // aplicar multiplicador
-                const cellW = Math.floor(blockWidth / Math.max(1, cols));
-                const cellH = Math.floor(blockHeight / Math.max(1, rows));
-                const originX = Math.round(width * baseXRatio) - Math.floor(blockWidth * 0.3);
-                const originY = Math.round(height * baseYRatio) - Math.floor(blockHeight * 0.5);
-                for (let i=0;i<count;i++) {
-                    const r = Math.floor(i/cols);
-                    const c = i % cols;
-                    const x = originX + c * cellW + Math.floor(cellW*0.5);
-                    const y = originY + r * cellH + Math.floor(cellH*0.5);
-                    positions.push({x,y});
-                }
-                if (EnableDebugOverlay) { try { console.log('[AS_BattlePositions] Grid inimigos', { bossPresent, cols, rows, count }); } catch(e){} }
-            } else {
-                // Pré-calcular sequências base
-                for (let i=0;i<count;i++) {
-                    let x = Math.round(width * (baseXRatio + i * spacingXRatio));
-                    let y = Math.round(height * (baseYRatio + i * spacingYRatio));
-                    positions.push({x,y});
-                }
-                for (let i=0;i<count;i++) {
-                    let p = positions[i];
-                    switch(layout){
-                        case 'horizontal':
-                            p.y = Math.round(height * baseYRatio);
-                            break;
-                        case 'vertical':
-                            p.x = Math.round(width * baseXRatio);
-                            break;
-                        case 'escada':
-                            p.x = Math.round(width * baseXRatio) + i * Math.round(width * spacingXRatio);
-                            p.y = Math.round(height * baseYRatio) + i * Math.round(height * spacingYRatio);
-                            break;
-                        case 'escadainvertida':
-                            p.x = Math.round(width * baseXRatio) + i * Math.round(width * spacingXRatio);
-                            p.y = Math.round(height * baseYRatio) - i * Math.round(height * spacingYRatio);
-                            break;
-                        case 'diagonal':
-                            // diagonal padrão já correta
-                            break;
-                        default:
-                            break;
-                    }
+            // Pré-calcular sequências base
+            for (let i=0;i<count;i++) {
+                let x = Math.round(width * (baseXRatio + i * spacingXRatio));
+                let y = Math.round(height * (baseYRatio + i * spacingYRatio));
+                positions.push({x,y});
+            }
+            for (let i=0;i<count;i++) {
+                let p = positions[i];
+                switch(layout){
+                    case 'horizontal':
+                        p.y = Math.round(height * baseYRatio);
+                        break;
+                    case 'vertical':
+                        p.x = Math.round(width * baseXRatio);
+                        break;
+                    case 'escada':
+                        // escada: diagonal descendente (X cresce, Y cresce)
+                        p.x = Math.round(width * baseXRatio) + i * Math.round(width * spacingXRatio);
+                        p.y = Math.round(height * baseYRatio) + i * Math.round(height * spacingYRatio);
+                        break;
+                    case 'escadainvertida':
+                        // escada invertida: diagonal ascendente (X cresce, Y decresce)
+                        p.x = Math.round(width * baseXRatio) + i * Math.round(width * spacingXRatio);
+                        p.y = Math.round(height * baseYRatio) - i * Math.round(height * spacingYRatio);
+                        break;
+                    case 'diagonal':
+                        // diagonal padrão: usar as posições pré-calculadas na sequência base
+                        // (já calculado corretamente na inicialização)
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -720,12 +651,12 @@
     Scene_Battle.prototype.start = function() {
         _Scene_Battle_start.call(this);
         try {
-            // Reset posições originais para novo combate
-            _AS_BP_originalTroopPositions = null;
-            // Aplicar posições (sempre - inclui troop + alinhamento)
-            const positions = computeEnemyPositions();
-            const list = this._spriteset && this._spriteset._enemySprites ? this._spriteset._enemySprites : [];
-            list.forEach((sp,i)=>{ if (positions[i]) { sp._homeX = positions[i].x; sp._homeY = positions[i].y; sp.updatePosition(); }});
+            // aplicar layout inimigos se não for troop
+            if (EnemyLayout !== 'troop') {
+                const positions = computeEnemyPositions();
+                const list = this._spriteset && this._spriteset._enemySprites ? this._spriteset._enemySprites : [];
+                list.forEach((sp,i)=>{ if (positions[i]) { sp._homeX = positions[i].x; sp._homeY = positions[i].y; sp.updatePosition(); }});
+            }
             if (EnableDebugOverlay) {
                 if (!this._asDebugOverlay) {
                     this._asDebugOverlay = new Sprite_DebugOverlay();
@@ -740,7 +671,7 @@
     Scene_Battle.prototype.update = function() {
         _Scene_Battle_update.call(this);
         try {
-            if (Graphics.frameCount % 30 === 0) {
+            if (EnemyLayout !== 'troop' && Graphics.frameCount % 30 === 0) {
                 const positions = computeEnemyPositions();
                 const list = this._spriteset && this._spriteset._enemySprites ? this._spriteset._enemySprites : [];
                 list.forEach((sp,i)=>{ if (positions[i]) { sp._homeX = positions[i].x; sp._homeY = positions[i].y; sp.updatePosition(); }});
